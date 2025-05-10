@@ -4,6 +4,17 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Logs y temporales ###
+*.log
+*.tmp
+*.bak
+*~
+
+### Archivos sensibles ###
+*.env
+application-*.properties
+application-*.yml
+
 ### STS ###
 .apt_generated
 .classpath
@@ -31,3 +42,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Sistema operativo ###
+.DS_Store
+Thumbs.db
+desktop.ini
