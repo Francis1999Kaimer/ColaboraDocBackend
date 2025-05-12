@@ -1,176 +1,86 @@
 package com.example.project.controllers;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.time.Duration; // Import Duration
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders; // Import HttpHeaders
-import org.springframework.http.ResponseCookie; // Import ResponseCookie
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
+import com.example.project.DTO.LoginRequestDTO;
+import com.example.project.DTO.LoginResponseDTO;
 import com.example.project.DTO.RegisterRequest;
+import com.example.project.DTO.UserMeResponseDTO;
 import com.example.project.config.JwtUtil;
 import com.example.project.entities.User;
-import com.example.project.repositories.UserRepository;
-
+import com.example.project.services.AuthService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-// Remove HttpServletResponse import if not used elsewhere after changes
-// import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
+
 
 @RestController
 @RequestMapping("/api/auth")
-// Ensure your CORS allows credentials for SameSite=None to work
 @CrossOrigin(origins = "https://localhost:3000", allowCredentials = "true")
 public class AuthController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+
+    private final AuthService authService;
     private final JwtUtil jwtUtil;
 
-    // Constructor injection is generally preferred
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    // Constructor injection for JwtUtil
-    public AuthController(JwtUtil jwtUtil) {
+    public AuthController(AuthService authService, JwtUtil jwtUtil) {
+        this.authService = authService;
         this.jwtUtil = jwtUtil;
     }
 
-
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.badRequest().body("El nombre de usuario ya existe.");
-        }
-
-        User user = new User();
-        user.setEmail(request.getEmail());
-        user.setNames(request.getNames());
-        user.setLasnames(request.getLastnames());
-        user.setUserpassword(passwordEncoder.encode(request.getPassword()));
-        userRepository.save(user);
-
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+        authService.registerUser(request);
         return ResponseEntity.ok("Usuario registrado exitosamente.");
     }
 
-
-
     @PostMapping("/login")
-    // Remove HttpServletResponse from parameters, we'll use ResponseEntity headers
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        return userRepository.findByEmail(request.getEmail())
-            .map(user -> {
-                if (passwordEncoder.matches(request.getPassword(), user.getUserpassword())) {
-                    // ✅ Generar el token JWT
-                    String token = jwtUtil.generateToken(user.getEmail(), user.getIduser());
-
-                    // ✅ Crear la cookie httpOnly con el JWT using ResponseCookie
-                    ResponseCookie cookie = ResponseCookie.from("token", token)
-                        .httpOnly(true)       // Accessible only by the web server
-                        .secure(true)         // Requires HTTPS
-                        .path("/")            // Available for all paths
-                        .maxAge(Duration.ofDays(1)) // Use Duration for maxAge (86400 seconds)
-                        .sameSite("None")     // Crucial for cross-origin requests with credentials
-                        .build();
-
-                    // ✅ Devolver los datos del usuario sin el token en el cuerpo de la respuesta
-                    Map<String, Object> responseMap = new HashMap<>();
-                    responseMap.put("email", user.getEmail());
-                    responseMap.put("names", user.getNames());
-
-                    // ✅ Add the cookie to the response headers
-                    return ResponseEntity.ok()
-                            .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                            .body(responseMap);
-                } else {
-                    // Use standard status code for invalid credentials
-                    return ResponseEntity.status(401).body("Credenciales inválidas.");
-                }
-            })
-            // Use standard status code for user not found / invalid credentials
-            .orElse(ResponseEntity.status(401).body("Credenciales inválidas."));
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
+        User user = authService.authenticateUser(request);
+        String token = jwtUtil.generateToken(user.getEmail(), user.getIduser());
+        ResponseCookie cookie = ResponseCookie.from("token", token)
+                .httpOnly(true).secure(true).path("/").maxAge(Duration.ofDays(1)).sameSite("None").build();
+        LoginResponseDTO responseBody = new LoginResponseDTO(user.getIduser(), user.getEmail(), user.getNames(), user.getLastnames());
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(responseBody);
     }
 
     @GetMapping("/me")
-    public ResponseEntity<?> getUserData(HttpServletRequest request) {
+    public ResponseEntity<UserMeResponseDTO> getUserData(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         String token = null;
-
-        // Busca la cookie 'token'
         if (cookies != null) {
-            for (Cookie cookie : cookies) {
-                if ("token".equals(cookie.getName())) {
-                    token = cookie.getValue();
-                    break;
-                }
-            }
+            for (Cookie cookie : cookies) { if ("token".equals(cookie.getName())) { token = cookie.getValue(); break; } }
         }
-
-        // Validate the token presence and validity
         if (token == null) {
-             return ResponseEntity.status(401).body("No autorizado: Token no encontrado");
+            logger.warn("Intento de acceso a /me sin token.");
+            return ResponseEntity.status(401).body(null);
         }
         if (!jwtUtil.validateToken(token)) {
-             return ResponseEntity.status(401).body("No autorizado: Token inválido o expirado");
+            logger.warn("Intento de acceso a /me con token inválido o expirado.");
+            return ResponseEntity.status(401).body(null);
         }
-
-
         String username = jwtUtil.getUsername(token);
-        User user = userRepository.findByEmail(username).orElse(null);
-
-        if (user == null) {
-            // This shouldn't happen if the token is valid, but good practice
-            return ResponseEntity.status(404).body("Usuario no encontrado para el token proporcionado");
-        }
-
-        // Devolver los datos del usuario
-        Map<String, Object> responseMap = new HashMap<>();
-        responseMap.put("email", user.getEmail());
-        responseMap.put("names", user.getNames());
-
-        return ResponseEntity.ok(responseMap);
+        User user = authService.findByEmail(username);
+        UserMeResponseDTO responseBody = new UserMeResponseDTO(user.getIduser(), user.getEmail(), user.getNames(), user.getLastnames());
+        return ResponseEntity.ok(responseBody);
     }
 
     @PostMapping("/logout")
-    // Remove HttpServletRequest and HttpServletResponse, use ResponseEntity
     public ResponseEntity<String> logout() {
-        System.out.println("Received logout request."); // Add logging
-
-        // ✅ Create an expired cookie with SameSite=None and Secure=true to clear it
-        ResponseCookie cookie = ResponseCookie.from("token", "") // Empty value
-            .httpOnly(true)
-            .secure(true)         // MUST match the login cookie's secure attribute
-            .path("/")            // MUST match the login cookie's path
-            .maxAge(0)            // Expire immediately
-            .sameSite("None")     // MUST match the login cookie's SameSite attribute
-            .build();
-
-        System.out.println("Logout cookie set to expire."); // Add logging
-
-        // ✅ Add the expired cookie to the response headers and return OK
-        return ResponseEntity.ok()
-                .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                .body("Logout successful");
+        logger.info("Solicitud de logout recibida.");
+        ResponseCookie cookie = ResponseCookie.from("token", "").httpOnly(true).secure(true).path("/").maxAge(0).sameSite("None").build();
+        logger.info("Cookie de logout configurada para expirar.");
+        return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body("Logout exitoso");
     }
 
-    // Inner class for LoginRequest remains the same
-    public static class LoginRequest {
-        private String email;
-        private String password;
-
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; }
-        public String getPassword() { return password; }
-        public void setPassword(String password) { this.password = password; }
-    }
+ 
 }

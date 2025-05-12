@@ -11,4 +11,6 @@ public interface ProjectUserRepository extends JpaRepository<ProjectUser, Intege
     List<ProjectUser> findByUser(User user);
     List<ProjectUser> findByProject(Project project);
     Optional<ProjectUser> findByUserAndProject(User user, Project project);
+    List<ProjectUser> findByUserAndStatus(User user, ProjectUser.InvitationStatus status);
+    Optional<ProjectUser> findByUserAndProjectAndStatusIn(User user, Project project, List<ProjectUser.InvitationStatus> statuses);
 }

@@ -7,7 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails; // Importar UserDetails
+import org.springframework.security.core.userdetails.UserDetails; 
 
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ import java.util.Arrays;
 public class JwtRequestFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService; // Inyectar CustomUserDetailsService
+    private final CustomUserDetailsService userDetailsService; 
 
 
     public JwtRequestFilter(JwtUtil jwtUtil, CustomUserDetailsService userDetailsService) {
@@ -34,7 +34,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String jwt = null;
-        String username = null; // Este será el email
+        String username = null; 
 
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
@@ -62,22 +62,22 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            // Cargar UserDetails usando el servicio
+            
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // Validar el token (confirmar que el token es para el UserDetails cargado y no ha expirado, etc.)
-            // El método validateToken del JwtUtil ya verifica la firma y la expiración.
-            // Podrías añadir una comprobación de que userDetails.getUsername() coincide con el username del token si es necesario,
-            // pero si el token se valida correctamente, el username extraído del token es el que se usa para cargar UserDetails.
-            if (jwtUtil.validateToken(jwt)) { // Asegúrate que validateToken(jwt, userDetails) no sea necesario,
-                                              // validateToken(jwt) debería ser suficiente si solo verifica el token en sí.
+            
+            
+            
+            
+            if (jwtUtil.validateToken(jwt)) { 
+                                              
                 
-                // Crear el objeto de autenticación usando el UserDetails completo
+                
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(
-                                userDetails, // <--- El principal ahora es UserDetails
-                                null,        // Credenciales (contraseña) no son necesarias aquí
-                                userDetails.getAuthorities() // Authorities/roles del UserDetails
+                                userDetails, 
+                                null,        
+                                userDetails.getAuthorities() 
                         );
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 

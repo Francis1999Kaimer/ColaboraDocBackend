@@ -62,7 +62,7 @@ public class User {
         return lastnames;
     }
 
-    public void setLasnames(String lastnames) {
+    public void setLastnames(String lastnames) {
         this.lastnames = lastnames;
     }
 

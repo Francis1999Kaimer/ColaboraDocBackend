@@ -1,14 +1,12 @@
 package com.example.project.DTO;
 
-// import java.util.List; // Descomentar si decides incluir ProjectUserDTOs
+
 
 public class ProjectDTO {
     private Integer idproject;
     private String name;
     private String description;
-    // private List<ProjectUserDTO> usersInProject; // Ejemplo si quisieras incluir usuarios
 
-    // Constructores
     public ProjectDTO() {
     }
 
@@ -18,15 +16,9 @@ public class ProjectDTO {
         this.description = description;
     }
 
-    // public ProjectDTO(Integer idproject, String name, String description, List<ProjectUserDTO> usersInProject) {
-    //     this.idproject = idproject;
-    //     this.name = name;
-    //     this.description = description;
-    //     this.usersInProject = usersInProject;
-    // }
 
 
-    // Getters y Setters
+
     public Integer getIdproject() {
         return idproject;
     }
@@ -51,11 +43,5 @@ public class ProjectDTO {
         this.description = description;
     }
 
-    // public List<ProjectUserDTO> getUsersInProject() {
-    //     return usersInProject;
-    // }
 
-    // public void setUsersInProject(List<ProjectUserDTO> usersInProject) {
-    //     this.usersInProject = usersInProject;
-    // }
 }

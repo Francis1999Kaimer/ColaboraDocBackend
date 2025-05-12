@@ -4,7 +4,7 @@ public class ProjectRequest {
     private String name;
     private String description;
 
-    // Getters y setters
+
     public String getName() {
         return name;
     }

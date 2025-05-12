@@ -1,22 +1,18 @@
 package com.example.project.DTO;
 
-public class UserSummaryDTO {
+public class LoginResponseDTO {
     private Integer iduser;
     private String email;
     private String names;
     private String lastnames;
+    
 
- 
-    public UserSummaryDTO() {
-    }
-
-    public UserSummaryDTO(Integer iduser, String email, String names, String lastnames) {
+    public LoginResponseDTO(Integer iduser, String email, String names, String lastnames) {
         this.iduser = iduser;
         this.email = email;
         this.names = names;
         this.lastnames = lastnames;
     }
-
 
     public Integer getIduser() {
         return iduser;

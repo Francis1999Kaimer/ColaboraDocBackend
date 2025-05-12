@@ -1,99 +1,117 @@
 package com.example.project.controllers;
 
-import com.example.project.DTO.ProjectDTO; // Importar el DTO
+import com.example.project.DTO.FolderDTO;
+import com.example.project.DTO.ProjectDTO;
 import com.example.project.DTO.ProjectRequest;
-// import com.example.project.DTO.ProjectUserDTO; // Si decides usarlo en ProjectDTO
-// import com.example.project.DTO.UserSummaryDTO; // Si decides usarlo en ProjectDTO
-import com.example.project.entities.Project;
-import com.example.project.entities.ProjectUser;
+import com.example.project.DTO.ProjectUserDTO;
+import com.example.project.DTO.ProjectUserInviteRequestDTO;
+import com.example.project.DTO.RespondToInvitationRequestDTO;
 import com.example.project.entities.User;
-import com.example.project.repositories.ProjectRepository;
-import com.example.project.repositories.ProjectUserRepository;
 import com.example.project.repositories.UserRepository;
+import com.example.project.services.ProjectService;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/projects")
+@CrossOrigin(origins = "https://localhost:3000", allowCredentials = "true")
 public class ProjectController {
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ProjectController.class);
+
+    private final ProjectService projectService;
+    private final UserRepository userRepository;
 
     @Autowired
-    private ProjectUserRepository projectUserRepository;
+    public ProjectController(ProjectService projectService, UserRepository userRepository) {
+        this.projectService = projectService;
+        this.userRepository = userRepository;
+    }
 
-    @Autowired
-    private UserRepository userRepository;
+    private User getCurrentUser(UserDetails userDetails) {
+        if (userDetails == null) {
+        
+            logger.error("UserDetails es null en getCurrentUser. El filtro JWT podría no estar funcionando correctamente o el endpoint no está asegurado.");
+            throw new RuntimeException("No se pudo determinar el usuario autenticado.");
+        }
+        return userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> {
+                    logger.error("Usuario autenticado con email '{}' no encontrado en la base de datos.", userDetails.getUsername());
+                    return new RuntimeException("Usuario autenticado no encontrado en la base de datos. Esto no debería ocurrir.");
+                });
+    }
 
     @PostMapping("/create")
-    public ResponseEntity<?> createProject(@RequestBody ProjectRequest request,
-                                           @AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        Project project = new Project();
-        project.setName(request.getName());
-        project.setDescription(request.getDescription());
-        // No es necesario setear projectUsers aquí al crear un proyecto nuevo de esta forma.
-        // La relación se establecerá a través de ProjectUser.
-        projectRepository.save(project); // Guardar primero el proyecto para obtener su ID
-
-        ProjectUser projectUser = new ProjectUser();
-        projectUser.setUser(user);
-        projectUser.setProject(project);
-        projectUser.setRoleCode("ADMIN");
-        projectUserRepository.save(projectUser);
-
-        // Opcional: devolver el proyecto creado como DTO
-        // ProjectDTO createdProjectDTO = new ProjectDTO(project.getIdproject(), project.getName(), project.getDescription());
-        // return ResponseEntity.ok(createdProjectDTO);
-        return ResponseEntity.ok("Proyecto creado exitosamente");
+    public ResponseEntity<ProjectDTO> createProject(@Valid @RequestBody ProjectRequest request,
+                                                    @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        ProjectDTO createdProject = projectService.createProject(request, currentUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdProject);
     }
 
-    @GetMapping
+
+    @GetMapping("/list")
     public ResponseEntity<List<ProjectDTO>> getUserProjects(@AuthenticationPrincipal UserDetails userDetails) {
-        User user = userRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        List<ProjectUser> projectUsers = projectUserRepository.findByUser(user);
-
-        List<ProjectDTO> projectDTOs = projectUsers.stream()
-                .map(ProjectUser::getProject) // Obtenemos la entidad Project
-                .distinct() // En caso de que un usuario tenga múltiples roles en el mismo proyecto
-                .map(projectEntity -> {
-                    // Mapeo manual a ProjectDTO
-                    ProjectDTO dto = new ProjectDTO();
-                    dto.setIdproject(projectEntity.getIdproject());
-                    dto.setName(projectEntity.getName());
-                    dto.setDescription(projectEntity.getDescription());
-
-                    // Si decidiste incluir la lista de ProjectUserDTO en ProjectDTO:
-                    /*
-                    List<ProjectUserDTO> usersInProjectDTO = projectEntity.getProjectUsers().stream()
-                        .map(puEntity -> {
-                            User uEntity = puEntity.getUser();
-                            UserSummaryDTO userSummary = new UserSummaryDTO(
-                                uEntity.getIduser(),
-                                uEntity.getEmail(),
-                                uEntity.getNames(),
-                                uEntity.getLastnames()
-                            );
-                            return new ProjectUserDTO(puEntity.getId(), userSummary, puEntity.getRoleCode());
-                        })
-                        .collect(Collectors.toList());
-                    dto.setUsersInProject(usersInProjectDTO);
-                    */
-                    return dto;
-                })
-                .collect(Collectors.toList());
-
+        User currentUser = getCurrentUser(userDetails);
+        List<ProjectDTO> projectDTOs = projectService.getProjectsForUser(currentUser);
         return ResponseEntity.ok(projectDTOs);
     }
+
+    @PostMapping("/invite")
+    public ResponseEntity<ProjectUserDTO> inviteUserToProject(@Valid @RequestBody ProjectUserInviteRequestDTO requestDTO,
+                                                              @AuthenticationPrincipal UserDetails userDetails) {
+        User invitingUser = getCurrentUser(userDetails);
+        ProjectUserDTO projectUserDTO = projectService.inviteUserToProject(requestDTO, invitingUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(projectUserDTO);
+    }
+
+  
+    @GetMapping("/{projectId}/users")
+    public ResponseEntity<List<ProjectUserDTO>> getProjectMembers(@PathVariable Integer projectId,
+                                                                 @AuthenticationPrincipal UserDetails userDetails) {
+        User requestingUser = getCurrentUser(userDetails);
+        List<ProjectUserDTO> users = projectService.getProjectMembers(projectId, requestingUser);
+        return ResponseEntity.ok(users);
+    }
+
+
+
+    @GetMapping("/invitations/pending")
+    public ResponseEntity<List<ProjectUserDTO>> getMyPendingInvitations(@AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        logger.info("Usuario '{}' solicitando sus invitaciones pendientes.", currentUser.getEmail());
+        List<ProjectUserDTO> invitations = projectService.getPendingInvitationsForUser(currentUser);
+        return ResponseEntity.ok(invitations);
+    }
+
+    @PostMapping("/invitations/{projectUserId}/respond")
+    public ResponseEntity<ProjectUserDTO> respondToInvitation(
+            @PathVariable Integer projectUserId,
+            @Valid @RequestBody RespondToInvitationRequestDTO request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        logger.info("Usuario '{}' respondiendo a la invitación ID: {}. Aceptar: {}",
+                currentUser.getEmail(), projectUserId, request.getAccept());
+        ProjectUserDTO updatedInvitation = projectService.respondToInvitation(projectUserId, currentUser, request.getAccept());
+        return ResponseEntity.ok(updatedInvitation);
+    }
+
+    @GetMapping("/{projectId}/folders")
+    public ResponseEntity<List<FolderDTO>> getProjectFolders(
+            @PathVariable Integer projectId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        User currentUser = getCurrentUser(userDetails);
+        List<FolderDTO> folderHierarchy = projectService.getFoldersForProject(projectId, currentUser);
+        return ResponseEntity.ok(folderHierarchy);
+    }
+
 }
