@@ -17,7 +17,6 @@ import com.example.project.repositories.FolderRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +39,7 @@ public class ProjectService {
     private final EmailService emailService;
     private final FolderRepository folderRepository;
 
-     @Autowired
-    public ProjectService(ProjectRepository projectRepository, UserRepository userRepository,
+     public ProjectService(ProjectRepository projectRepository, UserRepository userRepository,
                           ProjectUserRepository projectUserRepository, dtoMapper dtoMapper,
                           EmailService emailService, FolderRepository folderRepository) { 
         this.projectRepository = projectRepository;
