@@ -1,5 +1,6 @@
 package com.example.project.entities;
 
+import com.example.project.entities.base.AuditableEntity;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
@@ -9,7 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "project_user")
 @EntityListeners(AuditingEntityListener.class) 
-public class ProjectUser {
+public class ProjectUser extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -20,14 +21,12 @@ public class ProjectUser {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idproject", nullable = false)
-    private Project project;
-
-    @Column(nullable = false)
+    private Project project;    @Column(nullable = false)
     private String roleCode;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private InvitationStatus status = InvitationStatus.PENDING;
+    @Column(name = "status_invitacion", nullable = false, length = 20)
+    private InvitationStatus statusInvitacion = InvitationStatus.PENDING;
 
     @CreatedBy 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -56,11 +55,10 @@ public class ProjectUser {
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public Project getProject() { return project; }
-    public void setProject(Project project) { this.project = project; }
-    public String getRoleCode() { return roleCode; }
+    public void setProject(Project project) { this.project = project; }    public String getRoleCode() { return roleCode; }
     public void setRoleCode(String roleCode) { this.roleCode = roleCode; }
-    public InvitationStatus getStatus() { return status; }
-    public void setStatus(InvitationStatus status) { this.status = status; }
+    public InvitationStatus getStatusInvitacion() { return statusInvitacion; }
+    public void setStatusInvitacion(InvitationStatus statusInvitacion) { this.statusInvitacion = statusInvitacion; }
     public User getInvitedBy() { return invitedBy; }
     public void setInvitedBy(User invitedBy) { this.invitedBy = invitedBy; }
     public LocalDateTime getInvitationDate() { return invitationDate; }

@@ -30,7 +30,23 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+
+		<!-- Web Sockets -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-messaging</artifactId>
+		</dependency>
 	
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
     	<!-- Spring Web -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -107,6 +123,13 @@
         	<groupId>org.springframework.boot</groupId>
         	<artifactId>spring-boot-starter-mail</artifactId>
     	</dependency>
+
+		<!-- Dropbox API -->
+		<dependency>
+			<groupId>com.dropbox.core</groupId>
+			<artifactId>dropbox-core-sdk</artifactId>
+			<version>5.4.5</version>
+		</dependency>
 
 
 	</dependencies>

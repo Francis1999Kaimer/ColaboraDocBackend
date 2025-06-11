@@ -1,10 +1,12 @@
 package com.example.project.entities;
+
+import com.example.project.entities.base.AuditableEntity;
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
 @Table(name = "projects")
-public class Project {
+public class Project extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idproject;
@@ -13,11 +15,12 @@ public class Project {
     private String name;
 
     @Column
-    private String description;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-
+    private String description;    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProjectUser> projectUsers;
+
+    public Project() {
+        super(); 
+    }
 
     public Integer getIdproject() { return idproject; }
     public void setIdproject(Integer idproject) { this.idproject = idproject; }

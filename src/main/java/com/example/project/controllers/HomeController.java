@@ -9,4 +9,9 @@ public class HomeController {
     public String index() {
         return "index"; 
     }
+
+    @GetMapping("/admin/backup")
+    public String backupAdmin() {
+        return "database-backup";
+    }
 }

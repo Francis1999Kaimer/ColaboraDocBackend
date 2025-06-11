@@ -61,7 +61,7 @@ public class EmailService {
             helper.setSubject("¡Has sido invitado a un proyecto en ColaboraDoc!");
             helper.setText(htmlBody, true);
 
-           // mailSender.send(message);
+           
           //  logger.info("Email de invitación enviado a {} para el proyecto '{}'", invitedUser.getEmail(), invitation.getProject().getName());
             logger.info("Por ahora desactivado");
         } catch (MessagingException e) {

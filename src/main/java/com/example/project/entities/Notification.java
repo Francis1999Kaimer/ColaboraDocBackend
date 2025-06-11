@@ -1,15 +1,11 @@
 package com.example.project.entities;
 
+import com.example.project.entities.base.AuditableEntity;
 import jakarta.persistence.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications")
-@EntityListeners(AuditingEntityListener.class) 
-public class Notification {
+public class Notification extends AuditableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,10 +21,6 @@ public class Notification {
     @Column(name = "is_read", nullable = false)
     private boolean isRead = false;
 
-    @CreatedDate
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idproject", nullable = true) 
     private Project project;
@@ -43,9 +35,10 @@ public class Notification {
     @JoinColumn(name = "triggered_by_user_id") 
     private User triggeredBy;
 
-    public Notification() {}
-
-    public Notification(User recipient, String message, Project project, String entityType, Integer entityId, User triggeredBy) {
+    public Notification() {
+        super(); 
+    }    public Notification(User recipient, String message, Project project, String entityType, Integer entityId, User triggeredBy) {
+        super(); 
         this.recipient = recipient;
         this.message = message;
         this.project = project;
@@ -62,8 +55,6 @@ public class Notification {
     public void setMessage(String message) { this.message = message; }
     public boolean isRead() { return isRead; }
     public void setRead(boolean read) { isRead = read; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public Project getProject() { return project; }
     public void setProject(Project project) { this.project = project; }
     public String getEntityType() { return entityType; }

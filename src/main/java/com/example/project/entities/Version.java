@@ -1,16 +1,15 @@
 package com.example.project.entities;
 
+import com.example.project.entities.base.AuditableEntity;
 import jakarta.persistence.*;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "versions")
-@EntityListeners(AuditingEntityListener.class)
-public class Version {
+public class Version extends AuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer idversion;
@@ -25,11 +24,22 @@ public class Version {
     private String dropboxFilePath;
 
     @Column(name = "file_size_bytes")
-    private Long fileSize;
-
-    @Column(name = "mime_type")
+    private Long fileSize;    @Column(name = "mime_type")
     private String mimeType;
 
+    
+    @Column(name = "processed_dropbox_file_id")
+    private String processedDropboxFileId;
+
+    @Column(name = "processed_dropbox_file_path")
+    private String processedDropboxFilePath;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "processing_status")
+    private ProcessingStatus processingStatus = ProcessingStatus.PENDING;
+
+    @Column(name = "processing_error_message")
+    private String processingErrorMessage;
 
     @CreatedDate 
     @Column(name = "uploaded_at", nullable = false, updatable = false)
@@ -47,12 +57,12 @@ public class Version {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by_user_id", nullable = false, updatable = false)
     private User uploadedBy;
-
-
     public Version() {
+        super(); 
     }
 
     public Version(Integer versionNumber, String dropboxFileId, Document document) {
+        super(); 
         this.versionNumber = versionNumber;
         this.dropboxFileId = dropboxFileId;
         this.document = document;
@@ -75,9 +85,18 @@ public class Version {
     public String getComments() { return comments; }
     public void setComments(String comments) { this.comments = comments; }
     public Document getDocument() { return document; }
-    public void setDocument(Document document) { this.document = document; }
-    public User getUploadedBy() { return uploadedBy; }
+    public void setDocument(Document document) { this.document = document; }    public User getUploadedBy() { return uploadedBy; }
     public void setUploadedBy(User uploadedBy) { this.uploadedBy = uploadedBy; }
+
+    
+    public String getProcessedDropboxFileId() { return processedDropboxFileId; }
+    public void setProcessedDropboxFileId(String processedDropboxFileId) { this.processedDropboxFileId = processedDropboxFileId; }
+    public String getProcessedDropboxFilePath() { return processedDropboxFilePath; }
+    public void setProcessedDropboxFilePath(String processedDropboxFilePath) { this.processedDropboxFilePath = processedDropboxFilePath; }
+    public ProcessingStatus getProcessingStatus() { return processingStatus; }
+    public void setProcessingStatus(ProcessingStatus processingStatus) { this.processingStatus = processingStatus; }
+    public String getProcessingErrorMessage() { return processingErrorMessage; }
+    public void setProcessingErrorMessage(String processingErrorMessage) { this.processingErrorMessage = processingErrorMessage; }
 
 
     @Override
